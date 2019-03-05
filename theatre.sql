@@ -43,9 +43,9 @@ CREATE TABLE THEATERS
 CREATE TABLE SHOWS
 (
     ID                  NUMBER(6),
-    NAME       			VARCHAR(100) NOT NULL UNIQUE,
-	COST				NUMBER(6),
-	THEATER_PROD		VARCHAR(100),
+    NAME                VARCHAR(100) NOT NULL UNIQUE,
+	COST                NUMBER(6),
+	THEATER_PROD        VARCHAR(100),
     
         /* Constraints */
 
