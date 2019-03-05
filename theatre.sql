@@ -50,8 +50,11 @@ CREATE TABLE SHOWS
         /* Constraints */
 
     CONSTRAINT PK_SHOWS             PRIMARY KEY (ID),
+    CONSTRAINT NN_SHOWS_COST        CHECK(COST IS NOT NULL),
+
+        /* Foreign Key */
+
     FOREIGN KEY (THEATER_PROD)      REFERENCES THEATERS(NAME),
-    CONSTRAINT NN_SHOWS_COST        CHECK(COST IS NOT NULL)
 );
 
 
@@ -73,6 +76,9 @@ CREATE TABLE REPRESENTATIONS
         /* Constraints */
 
     CONSTRAINT PK_REPRESENTATIONS           PRIMARY KEY(ID),
+
+        /* Foreign Key */
+
     FOREIGN KEY (SHOW_ID)                   REFERENCES SHOWS(ID),
     FOREIGN KEY (THEATER)                   REFERENCES THEATERS(NAME),
 );
@@ -88,15 +94,71 @@ CREATE TABLE TICKETS
     REPRESENTATION_ID		NUMBER(6),
     PURCHASING_DATE         DATE,
 
-        /* Constraintes */
+        /* Constraints */
 
     CONSTRAINT PK_TICKETING         	PRIMARY KEY(ID),
-    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID),
-    CONSTRAINT NN_TICKETING_TARIF   	CHECK(TARIF IS NOT NULL)
+    CONSTRAINT NN_TICKETING_TARIF   	CHECK(TARIF IS NOT NULL),
 
-    
-    
+        /* Foreign Key */
+
+    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID),
 );
+
+
+/* --- Grants --- */
+
+CREATE TABLE GRANTES
+(
+    ID                  NUMBER(5),
+    AMOUNT				NUMBER(5),
+    DATE_GRANTED        DATE,  
+	THEATER				NUMBER(5),
+	
+        /* Constraints */
+
+    CONSTRAINT PK_GRANTES            	PRIMARY KEY(ID),
+	CONSTRAINT	NN_DATE_GRANTED		    CHECK(DATE_GRANTED IS NOT NULL),
+
+        /* Foreign Key */
+
+    FOREIGN KEY(THEATER)                REFERENCES THEATERS(ID)
+);
+
+
+/* --- Donations --- */
+
+CREATE TABLE DONATIONS
+(	
+	
+    ID			        NUMBER(5),
+	THEATER			    NUMBER(5),
+	DONATION_DATE		DATE,
+	AMOUNT_DONATION		NUMBER(8),	
+
+        /* Constraints */
+
+    CONSTRAINT PK_DONATION      PRIMARY KEY(ID),
+
+        /* Foreign Key */
+
+    FOREIGN KEY(THEATER)        REFERENCES THEATERS(ID)
+);
+
+
+/* --- Dates --- */
+
+CREATE TABLE DATES
+(	
+	CURENT_DATE						DATE,
+	TICKET_ID						NUMBER(5),
+	REPRESENTATION_ID				NUMBER(5),
+
+        /* Foreign Key */
+
+    FOREIGN KEY(TICKET_ID)              REFERENCES TICKETS(ID),
+    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID)
+);
+
 
 /*==================================================================================
                             |   TRIGGERS   | 
@@ -112,6 +174,3 @@ CREATE TABLE TICKETS
 
 
 /* --- Theaters --- */
-
-INSERT INTO THEATERS (NAME) VALUES ('Grand Rex');
-INSERT INTO THEATERS (NAME) VALUES ('Point virgule');
