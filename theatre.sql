@@ -25,14 +25,14 @@ CREATE TABLE FAKE_DATE
 
 CREATE TABLE THEATERS
 (
-    NAME		        VARCHAR2(100) NOT NULL UNIQUE,
+    NAME		        VARCHAR2(100) NOT NULL,
     CAPACITY		    NUMBER(6),		
     BUDGET              NUMBER(6),
     CITY                VARCHAR2(100),
     
         /* Constraints */
 
-    CONSTRAINT PK_THEATERS          PRIMARY KEY(THEATER_ID),
+    CONSTRAINT PK_THEATERS          PRIMARY KEY(NAME),
     CONSTRAINT NN_THEATERS_CAP      CHECK(CAPACITY IS NOT NULL),
     CONSTRAINT NN_THEATERS_BUD      CHECK(BUDGET > 0)
 );
@@ -42,19 +42,18 @@ CREATE TABLE THEATERS
 
 CREATE TABLE SHOWS
 (
-    ID                  NUMBER(6),
-    NAME                VARCHAR(100) NOT NULL UNIQUE,
+    NAME                VARCHAR(100) NOT NULL,
 	COST                NUMBER(6),
 	THEATER_PROD        VARCHAR(100),
     
         /* Constraints */
 
-    CONSTRAINT PK_SHOWS             PRIMARY KEY (ID),
+    CONSTRAINT PK_SHOWS             PRIMARY KEY (NAME),
     CONSTRAINT NN_SHOWS_COST        CHECK(COST IS NOT NULL),
 
         /* Foreign Key */
 
-    FOREIGN KEY (THEATER_PROD)      REFERENCES THEATERS(NAME),
+    FOREIGN KEY (THEATER_PROD)      REFERENCES THEATERS(NAME)
 );
 
 
@@ -62,11 +61,10 @@ CREATE TABLE SHOWS
 
 CREATE TABLE REPRESENTATIONS
 (
-    ID       		                NUMBER(6),
-    SHOW_ID      				    NUMBER(6),
+    ID       		                NUMBER(6) NOT NULL,
+    SHOW      				        VARCHAR2(100),
 	THEATER					        VARCHAR2(100),
     REPRESENTATION_DATE           	DATE,
-	NUMB_OF_REPRESENTATION			NUMBER(5),
 	ACTOR_FEES						NUMBER(5),
 	STAGING_COST					NUMBER(5),
 	LIGHTING_COST					NUMBER(5),
@@ -79,8 +77,8 @@ CREATE TABLE REPRESENTATIONS
 
         /* Foreign Key */
 
-    FOREIGN KEY (SHOW_ID)                   REFERENCES SHOWS(ID),
-    FOREIGN KEY (THEATER)                   REFERENCES THEATERS(NAME),
+    FOREIGN KEY (SHOW)                      REFERENCES SHOWS(NAME),
+    FOREIGN KEY (THEATER)                   REFERENCES THEATERS(NAME)
 );
 
 
@@ -88,8 +86,8 @@ CREATE TABLE REPRESENTATIONS
 
 CREATE TABLE TICKETS
 (	
-	ID					    NUMBER(6),
-    T_TYPE        			NUMBER(5),
+	ID					    NUMBER(6) NOT NULL,
+    TICKET_TYPE        		NUMBER(5),
     TARIF			  	    NUMBER(5),
     REPRESENTATION_ID		NUMBER(6),
     PURCHASING_DATE         DATE,
@@ -101,7 +99,7 @@ CREATE TABLE TICKETS
 
         /* Foreign Key */
 
-    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID),
+    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID)
 );
 
 
@@ -109,10 +107,10 @@ CREATE TABLE TICKETS
 
 CREATE TABLE GRANTES
 (
-    ID                  NUMBER(5),
+    ID                  NUMBER(5) NOT NULL,
     AMOUNT				NUMBER(5),
     DATE_GRANTED        DATE,  
-	THEATER				NUMBER(5),
+	THEATER				VARCHAR2(100),
 	
         /* Constraints */
 
@@ -121,7 +119,7 @@ CREATE TABLE GRANTES
 
         /* Foreign Key */
 
-    FOREIGN KEY(THEATER)                REFERENCES THEATERS(ID)
+    FOREIGN KEY(THEATER)                REFERENCES THEATERS(NAME)
 );
 
 
@@ -130,8 +128,8 @@ CREATE TABLE GRANTES
 CREATE TABLE DONATIONS
 (	
 	
-    ID			        NUMBER(5),
-	THEATER			    NUMBER(5),
+    ID			        VARCHAR2(100),
+	THEATER			    VARCHAR2(100),
 	DONATION_DATE		DATE,
 	AMOUNT_DONATION		NUMBER(8),	
 
@@ -141,22 +139,7 @@ CREATE TABLE DONATIONS
 
         /* Foreign Key */
 
-    FOREIGN KEY(THEATER)        REFERENCES THEATERS(ID)
-);
-
-
-/* --- Dates --- */
-
-CREATE TABLE DATES
-(	
-	CURENT_DATE						DATE,
-	TICKET_ID						NUMBER(5),
-	REPRESENTATION_ID				NUMBER(5),
-
-        /* Foreign Key */
-
-    FOREIGN KEY(TICKET_ID)              REFERENCES TICKETS(ID),
-    FOREIGN KEY(REPRESENTATION_ID)      REFERENCES REPRESENTATIONS(ID)
+    FOREIGN KEY(THEATER)        REFERENCES THEATERS(NAME)
 );
 
 
@@ -165,7 +148,32 @@ CREATE TABLE DATES
  ==================================================================================*/
 
 
-/* --- Theaters --- */
+/* --- Representations --- */
+
+
+
+
+/* --- Tickets --- */
+
+CREATE TRIGGER TRIGG_BI_TICKETS BEFORE INSERT
+    ON TICKETS FOR EACK ROW
+    DECLARE
+        DISPO NUMBER(5);
+    BEGIN
+        SELECT DISPONIBILITY INTO DISPO FROM REPRESENTATIONS
+            WHERE REPRESENTATION_ID = :OLD.REPRESENTATION_ID;
+        IF DISPO > 0 THEN
+            UPDATE REPRESENTATIONS SET DISPONIBILITY = DISPONIBILITY-1
+                WHERE REPRESENTATION_ID = :OLD.REPRESENTATION_ID;
+        ELSE
+            RAISE TH_FULL;
+        END IF;
+        EXCEPTION WHEN TH_FULL 
+        THENRAISE_APPLICATION_ERROR(-20002, 'Theater is full!');
+    END;
+
+
+
 
 
 /*==================================================================================
