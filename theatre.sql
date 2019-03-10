@@ -6,19 +6,22 @@
  ALTER SESSION SET NLS_DATE_FORMAT = 'DD-MM-YYYY' ;
 
 
-/*==================================================================================
-                            |  DATA BASES  | 
+ /*==================================================================================
+                            |     TYPE     |
  ==================================================================================*/
 
 
-/* --- Fake date --- */
+CREATE TYPE DATES AS OBJECT(
+    DATE_START                  DATE,
+    NUMBER_OF_RECCURENCES       NUMBER(2),
+    RECCURENCY                  VARCHAR2(100)
+)
+/
 
-CREATE TABLE FAKE_DATE
-(
-    DAY     NUMBER(2) NOT NULL,
-    MONTH   NUMBER(2) NOT NULL,
-    YEAR    NUMBER(4) NOT NULL
-);
+
+/*==================================================================================
+                            |  DATA BASES  | 
+ ==================================================================================*/
 
 
 /* --- Theaters --- */
@@ -27,7 +30,7 @@ CREATE TABLE THEATERS
 (
     NAME		        VARCHAR2(100) NOT NULL,
     CAPACITY		    NUMBER(6),	
-    BUDGET              NUMBER(6) NOT NULL,
+    BUDGET              NUMBER(12) NOT NULL,
     CITY                VARCHAR2(100),
     
         /* Constraints */
@@ -64,12 +67,13 @@ CREATE TABLE REPRESENTATIONS
     ID       		                NUMBER(6) NOT NULL,
     SHOW      				        VARCHAR2(100),
 	THEATER					        VARCHAR2(100),
-    REPRESENTATION_DATE           	DATE,
+    REPRESENTATION_DATES           	DATES,
 	ACTOR_FEES						NUMBER(5),
 	STAGING_COST					NUMBER(5),
 	LIGHTING_COST					NUMBER(5),
 	TRAVEL_COST						NUMBER(5),
     DISPONIBILITY                   NUMBER(5),
+    SELLING_PRICE                   NUMBER(5),
 
         /* Constraints */
 
@@ -88,14 +92,13 @@ CREATE TABLE TICKETS
 (	
 	ID					    NUMBER(6) NOT NULL,
     TICKET_TYPE        		NUMBER(5),
-    TARIF			  	    NUMBER(5),
     REPRESENTATION_ID		NUMBER(6),
     PURCHASING_DATE         DATE,
+    NAME_SPECTATOR          VARCHAR2(100),
 
         /* Constraints */
 
     CONSTRAINT PK_TICKETING         	PRIMARY KEY(ID),
-    CONSTRAINT NN_TICKETING_TARIF   	CHECK(TARIF IS NOT NULL),
 
         /* Foreign Key */
 
@@ -105,17 +108,19 @@ CREATE TABLE TICKETS
 
 /* --- Grants --- */
 
-CREATE TABLE GRANTES
+CREATE TABLE GRANTS
 (
-    ID                  NUMBER(5) NOT NULL,
-    AMOUNT				NUMBER(5),
-    DATE_GRANTED        DATE,  
-	THEATER				VARCHAR2(100),
+    AMOUNT				    NUMBER(9),
+    DATE_GRANTED            DATES,
+	THEATER				    VARCHAR2(100),
+    SPONSOR                 VARCHAR2(100),
 	
         /* Constraints */
 
-    CONSTRAINT PK_GRANTES            	PRIMARY KEY(ID),
-	CONSTRAINT	NN_DATE_GRANTED		    CHECK(DATE_GRANTED IS NOT NULL),
+	CONSTRAINT	NN_DATE_GRANTS		    CHECK(DATE_GRANTED IS NOT NULL),
+    CONSTRAINT	NN_SPONSOR_GRANTS		CHECK(SPONSOR IS NOT NULL),
+    CONSTRAINT	NN_THEATER_GRANTS		CHECK(THEATER IS NOT NULL),
+    CONSTRAINT  POS_AMOUNT              CHECK(AMOUNT>0),
 
         /* Foreign Key */
 
@@ -127,15 +132,10 @@ CREATE TABLE GRANTES
 
 CREATE TABLE DONATIONS
 (	
-	
-    ID			        VARCHAR2(100),
 	THEATER			    VARCHAR2(100),
 	DONATION_DATE		DATE,
-	AMOUNT_DONATION		NUMBER(8),	
-
-        /* Constraints */
-
-    CONSTRAINT PK_DONATION      PRIMARY KEY(ID),
+	AMOUNT		        NUMBER(8),
+    DONATOR             VARCHAR2(100),
 
         /* Foreign Key */
 
@@ -148,35 +148,102 @@ CREATE TABLE DONATIONS
  ==================================================================================*/
 
 
+/* --- Theaters --- */
+
+
+
+/* --- Shows --- */
+
+CREATE TRIGGER TRIGG_BI_SHOWS BEFORE INSERT
+    ON SHOWS FOR EACH ROW
+DECLARE
+    BUDGET_THEATER NUMBER(12);
+BEGIN
+    SELECT BUDGET INTO BUDGET_THEATER FROM THEATERS WHERE NAME = :OLD.THEATER_PROD;
+    IF BUDGET_THEATER < :OLD.COST THEN
+        RAISE_APPLICATION_ERROR(-20002, 'No budget !');
+    END IF;
+END;
+/
+
 /* --- Representations --- */
 
 
-
-
 /* --- Tickets --- */
+
 CREATE TRIGGER TRIGG_BI_TICKETS BEFORE INSERT
     ON TICKETS FOR EACH ROW
 DECLARE
     DISPO NUMBER(5);
 BEGIN
-    SELECT DISPONIBILITY INTO DISPO FROM REPRESENTATIONS
-        WHERE ID = :OLD.REPRESENTATION_ID;
+    SELECT DISPONIBILITY INTO DISPO FROM REPRESENTATIONS WHERE ID = :OLD.REPRESENTATION_ID;
     IF DISPO > 0 THEN
-        UPDATE REPRESENTATIONS SET DISPONIBILITY = DISPONIBILITY-1
-            WHERE ID = :OLD.REPRESENTATION_ID;
+        UPDATE REPRESENTATIONS SET DISPONIBILITY = DISPO-1 WHERE ID = :OLD.REPRESENTATION_ID;
     ELSE
-        RAISE_APPLICATION_ERROR(-20002, 'Theater is full!');
+        RAISE_APPLICATION_ERROR(-20002, 'Theater is full !');
     END IF;
 END;
 /
 
 
+/* --- Grants --- */
 
 
 
+
+/* --- Donations --- */
+
+CREATE TRIGGER TRIGG_AI_DONATIONS AFTER INSERT 
+    ON DONATIONS FOR EACH ROW
+BEGIN
+    UPDATE THEATERS SET BUDGET = BUDGET + :OLD.AMOUNT WHERE NAME = :OLD.THEATER;
+END;
+/
+
+/*==================================================================================
+                            |   Functions   | 
+ ==================================================================================*/
+
+ /* DATES */
+CREATE FUNCTION EVERY_DAYS(DATES DATES)
+    RETURN BOOLEAN
+IS
+    I INT(2) := 0;
+BEGIN
+    IF DATES.DATE_START BETWEEN SYSDATE AND (SYSDATE + DATES.NUMBER_OF_RECCURENCES) THEN
+        RETURN TRUE;
+    END IF;
+
+    RETURN FALSE;
+END;
+/
 /*==================================================================================
                             |     DATA     | 
  ==================================================================================*/
 
 
 /* --- Theaters --- */
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Grand Rex',2800,10000,'Paris');
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Le Grand Point-Virgule',650,5000,'Paris');
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Bobino',904,7000,'Paris');
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Olympia',1996,10000,'Paris');
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Casino de Paris',1500,9000,'Paris');
+
+INSERT INTO THEATERS (NAME, CAPACITY, BUDGET, CITY) 
+VALUES ('Théâtre Mogador',1600,9000,'Paris');
+
+
+/* --- Shows --- */
+
+INSERT INTO SHOWS (NAME, COST, THEATER_PROD) 
+VALUES ('Le tartuffe',1600,'Bobino');
