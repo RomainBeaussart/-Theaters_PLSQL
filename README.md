@@ -4,7 +4,7 @@
 
 ### Theaters Table
 
-```plsql
+```sql
 CREATE TABLE THEATERS
 (
     NAME		        VARCHAR2(100) NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE THEATERS
 
 ### Shows Table
 
-```plsql
+```sql
 CREATE TABLE SHOWS
 (
     NAME                VARCHAR(100) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE SHOWS
 
 ### Reprensentations Table
 
-```plsql
+```sql
 CREATE TABLE REPRESENTATIONS
 (
     ID       		                NUMBER(6) NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE REPRESENTATIONS
 
 ### Tickets Table
 
-```plsql
+```sql
 CREATE TABLE TICKETS
 (	
 	ID					    NUMBER(6) NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE TICKETS
 
 ### Grants Table
 
-```plsql
+```sql
 CREATE TABLE GRANTS
 (
     AMOUNT				    NUMBER(9),
@@ -123,7 +123,7 @@ CREATE TABLE GRANTS
 
 ### Donations Table
 
-```plsql
+```sql
 CREATE TABLE DONATIONS
 (	
 	THEATER			    VARCHAR2(100),
@@ -145,7 +145,7 @@ CREATE TABLE DONATIONS
 
 Verification du budget disponible pour le show.
 
-```plsql
+```sql
 CREATE TRIGGER TRIGG_BI_SHOWS BEFORE INSERT
     ON SHOWS FOR EACH ROW
 DECLARE
@@ -167,7 +167,7 @@ END;
 
 Verification de la disponibilité des places
 
-```plsql
+```sql
 REATE TRIGGER TRIGG_BI_TICKETS BEFORE INSERT
     ON TICKETS FOR EACH ROW
 DECLARE
@@ -191,7 +191,7 @@ END;
 
 Ajout de la donation au budget du theatre
 
-```plsql
+```sql
 CREATE TRIGGER TRIGG_AI_DONATIONS AFTER INSERT 
     ON DONATIONS FOR EACH ROW
 BEGIN
@@ -208,7 +208,7 @@ END;
 
 Fonction éxecté tous les jours, afin de faire les transactions journalières
 
-```plsql
+```sql
 CREATE FUNCTION EVERY_DAYS(DATES DATES)
     RETURN BOOLEAN
 IS
@@ -222,3 +222,5 @@ BEGIN
 END;
 /
 ```
+
+
